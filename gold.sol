@@ -9,7 +9,7 @@ contract Gold is ERC20, Ownable {
 
     event FrozenFunds(address target, bool frozen);
 
-    constructor() ERC20("NinJaWorld Token", "NJW") {
+    constructor() ERC20("Ninja Gold", "NJG") {
     }
 
     function freezeAccount(address target, bool freeze) onlyOwner public {

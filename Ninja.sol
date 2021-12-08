@@ -965,68 +965,21 @@ contract ERC721 is Context, ERC165, IERC721, IERC721Metadata {
 
 
 /**
- * @dev Contract module which provides a basic access control mechanism, where
- * there is an account (an owner) that can be granted exclusive access to
- * specific functions.
- *
- * By default, the owner account will be the one that deploys the contract. This
- * can later be changed with {transferOwnership}.
- *
- * This module is used through inheritance. It will make available the modifier
- * `onlyOwner`, which can be applied to your functions to restrict their use to
- * the owner.
+ * @title ERC721 Burnable Token
+ * @dev ERC721 Token that can be irreversibly burned (destroyed).
  */
-abstract contract Ownable is Context {
-    address private _owner;
-
-    event OwnershipTransferred(address indexed previousOwner, address indexed newOwner);
-
+abstract contract ERC721Burnable is Context, ERC721 {
     /**
-     * @dev Initializes the contract setting the deployer as the initial owner.
-     */
-    constructor() {
-        _setOwner(_msgSender());
-    }
-
-    /**
-     * @dev Returns the address of the current owner.
-     */
-    function owner() public view virtual returns (address) {
-        return _owner;
-    }
-
-    /**
-     * @dev Throws if called by any account other than the owner.
-     */
-    modifier onlyOwner() {
-        require(owner() == _msgSender(), "Ownable: caller is not the owner");
-        _;
-    }
-
-    /**
-     * @dev Leaves the contract without owner. It will not be possible to call
-     * `onlyOwner` functions anymore. Can only be called by the current owner.
+     * @dev Burns `tokenId`. See {ERC721-_burn}.
      *
-     * NOTE: Renouncing ownership will leave the contract without an owner,
-     * thereby removing any functionality that is only available to the owner.
+     * Requirements:
+     *
+     * - The caller must own `tokenId` or be an approved operator.
      */
-    function renounceOwnership() public virtual onlyOwner {
-        _setOwner(address(0));
-    }
-
-    /**
-     * @dev Transfers ownership of the contract to a new account (`newOwner`).
-     * Can only be called by the current owner.
-     */
-    function transferOwnership(address newOwner) public virtual onlyOwner {
-        require(newOwner != address(0), "Ownable: new owner is the zero address");
-        _setOwner(newOwner);
-    }
-
-    function _setOwner(address newOwner) private {
-        address oldOwner = _owner;
-        _owner = newOwner;
-        emit OwnershipTransferred(oldOwner, newOwner);
+    function burn(uint256 tokenId) public virtual {
+        //solhint-disable-next-line max-line-length
+        require(_isApprovedOrOwner(_msgSender(), tokenId), "ERC721Burnable: caller is not owner nor approved");
+        _burn(tokenId);
     }
 }
 
@@ -1298,97 +1251,407 @@ library TransferHelper {
 }
 
 
+
+
+/**
+ * @dev External interface of AccessControl declared to support ERC165 detection.
+ */
+interface IAccessControl {
+    /**
+     * @dev Emitted when `newAdminRole` is set as ``role``'s admin role, replacing `previousAdminRole`
+     *
+     * `DEFAULT_ADMIN_ROLE` is the starting admin for all roles, despite
+     * {RoleAdminChanged} not being emitted signaling this.
+     *
+     * _Available since v3.1._
+     */
+    event RoleAdminChanged(bytes32 indexed role, bytes32 indexed previousAdminRole, bytes32 indexed newAdminRole);
+
+    /**
+     * @dev Emitted when `account` is granted `role`.
+     *
+     * `sender` is the account that originated the contract call, an admin role
+     * bearer except when using {AccessControl-_setupRole}.
+     */
+    event RoleGranted(bytes32 indexed role, address indexed account, address indexed sender);
+
+    /**
+     * @dev Emitted when `account` is revoked `role`.
+     *
+     * `sender` is the account that originated the contract call:
+     *   - if using `revokeRole`, it is the admin role bearer
+     *   - if using `renounceRole`, it is the role bearer (i.e. `account`)
+     */
+    event RoleRevoked(bytes32 indexed role, address indexed account, address indexed sender);
+
+    /**
+     * @dev Returns `true` if `account` has been granted `role`.
+     */
+    function hasRole(bytes32 role, address account) external view returns (bool);
+
+    /**
+     * @dev Returns the admin role that controls `role`. See {grantRole} and
+     * {revokeRole}.
+     *
+     * To change a role's admin, use {AccessControl-_setRoleAdmin}.
+     */
+    function getRoleAdmin(bytes32 role) external view returns (bytes32);
+
+    /**
+     * @dev Grants `role` to `account`.
+     *
+     * If `account` had not been already granted `role`, emits a {RoleGranted}
+     * event.
+     *
+     * Requirements:
+     *
+     * - the caller must have ``role``'s admin role.
+     */
+    function grantRole(bytes32 role, address account) external;
+
+    /**
+     * @dev Revokes `role` from `account`.
+     *
+     * If `account` had been granted `role`, emits a {RoleRevoked} event.
+     *
+     * Requirements:
+     *
+     * - the caller must have ``role``'s admin role.
+     */
+    function revokeRole(bytes32 role, address account) external;
+
+    /**
+     * @dev Revokes `role` from the calling account.
+     *
+     * Roles are often managed via {grantRole} and {revokeRole}: this function's
+     * purpose is to provide a mechanism for accounts to lose their privileges
+     * if they are compromised (such as when a trusted device is misplaced).
+     *
+     * If the calling account had been granted `role`, emits a {RoleRevoked}
+     * event.
+     *
+     * Requirements:
+     *
+     * - the caller must be `account`.
+     */
+    function renounceRole(bytes32 role, address account) external;
+}
+
+
+
+
+
+
+/**
+ * @dev Contract module that allows children to implement role-based access
+ * control mechanisms. This is a lightweight version that doesn't allow enumerating role
+ * members except through off-chain means by accessing the contract event logs. Some
+ * applications may benefit from on-chain enumerability, for those cases see
+ * {AccessControlEnumerable}.
+ *
+ * Roles are referred to by their `bytes32` identifier. These should be exposed
+ * in the external API and be unique. The best way to achieve this is by
+ * using `public constant` hash digests:
+ *
+ * ```
+ * bytes32 public constant MY_ROLE = keccak256("MY_ROLE");
+ * ```
+ *
+ * Roles can be used to represent a set of permissions. To restrict access to a
+ * function call, use {hasRole}:
+ *
+ * ```
+ * function foo() public {
+ *     require(hasRole(MY_ROLE, msg.sender));
+ *     ...
+ * }
+ * ```
+ *
+ * Roles can be granted and revoked dynamically via the {grantRole} and
+ * {revokeRole} functions. Each role has an associated admin role, and only
+ * accounts that have a role's admin role can call {grantRole} and {revokeRole}.
+ *
+ * By default, the admin role for all roles is `DEFAULT_ADMIN_ROLE`, which means
+ * that only accounts with this role will be able to grant or revoke other
+ * roles. More complex role relationships can be created by using
+ * {_setRoleAdmin}.
+ *
+ * WARNING: The `DEFAULT_ADMIN_ROLE` is also its own admin: it has permission to
+ * grant and revoke this role. Extra precautions should be taken to secure
+ * accounts that have been granted it.
+ */
+abstract contract AccessControl is Context, IAccessControl, ERC165 {
+    struct RoleData {
+        mapping(address => bool) members;
+        bytes32 adminRole;
+    }
+
+    mapping(bytes32 => RoleData) private _roles;
+
+    bytes32 public constant DEFAULT_ADMIN_ROLE = 0x00;
+
+    /**
+     * @dev Modifier that checks that an account has a specific role. Reverts
+     * with a standardized message including the required role.
+     *
+     * The format of the revert reason is given by the following regular expression:
+     *
+     *  /^AccessControl: account (0x[0-9a-f]{40}) is missing role (0x[0-9a-f]{64})$/
+     *
+     * _Available since v4.1._
+     */
+    modifier onlyRole(bytes32 role) {
+        _checkRole(role, _msgSender());
+        _;
+    }
+
+    /**
+     * @dev See {IERC165-supportsInterface}.
+     */
+    function supportsInterface(bytes4 interfaceId) public view virtual override returns (bool) {
+        return interfaceId == type(IAccessControl).interfaceId || super.supportsInterface(interfaceId);
+    }
+
+    /**
+     * @dev Returns `true` if `account` has been granted `role`.
+     */
+    function hasRole(bytes32 role, address account) public view override returns (bool) {
+        return _roles[role].members[account];
+    }
+
+    /**
+     * @dev Revert with a standard message if `account` is missing `role`.
+     *
+     * The format of the revert reason is given by the following regular expression:
+     *
+     *  /^AccessControl: account (0x[0-9a-f]{40}) is missing role (0x[0-9a-f]{64})$/
+     */
+    function _checkRole(bytes32 role, address account) internal view {
+        if (!hasRole(role, account)) {
+            revert(
+                string(
+                    abi.encodePacked(
+                        "AccessControl: account ",
+                        Strings.toHexString(uint160(account), 20),
+                        " is missing role ",
+                        Strings.toHexString(uint256(role), 32)
+                    )
+                )
+            );
+        }
+    }
+
+    /**
+     * @dev Returns the admin role that controls `role`. See {grantRole} and
+     * {revokeRole}.
+     *
+     * To change a role's admin, use {_setRoleAdmin}.
+     */
+    function getRoleAdmin(bytes32 role) public view override returns (bytes32) {
+        return _roles[role].adminRole;
+    }
+
+    /**
+     * @dev Grants `role` to `account`.
+     *
+     * If `account` had not been already granted `role`, emits a {RoleGranted}
+     * event.
+     *
+     * Requirements:
+     *
+     * - the caller must have ``role``'s admin role.
+     */
+    function grantRole(bytes32 role, address account) public virtual override onlyRole(getRoleAdmin(role)) {
+        _grantRole(role, account);
+    }
+
+    /**
+     * @dev Revokes `role` from `account`.
+     *
+     * If `account` had been granted `role`, emits a {RoleRevoked} event.
+     *
+     * Requirements:
+     *
+     * - the caller must have ``role``'s admin role.
+     */
+    function revokeRole(bytes32 role, address account) public virtual override onlyRole(getRoleAdmin(role)) {
+        _revokeRole(role, account);
+    }
+
+    /**
+     * @dev Revokes `role` from the calling account.
+     *
+     * Roles are often managed via {grantRole} and {revokeRole}: this function's
+     * purpose is to provide a mechanism for accounts to lose their privileges
+     * if they are compromised (such as when a trusted device is misplaced).
+     *
+     * If the calling account had been granted `role`, emits a {RoleRevoked}
+     * event.
+     *
+     * Requirements:
+     *
+     * - the caller must be `account`.
+     */
+    function renounceRole(bytes32 role, address account) public virtual override {
+        require(account == _msgSender(), "AccessControl: can only renounce roles for self");
+
+        _revokeRole(role, account);
+    }
+
+    /**
+     * @dev Grants `role` to `account`.
+     *
+     * If `account` had not been already granted `role`, emits a {RoleGranted}
+     * event. Note that unlike {grantRole}, this function doesn't perform any
+     * checks on the calling account.
+     *
+     * [WARNING]
+     * ====
+     * This function should only be called from the constructor when setting
+     * up the initial roles for the system.
+     *
+     * Using this function in any other way is effectively circumventing the admin
+     * system imposed by {AccessControl}.
+     * ====
+     */
+    function _setupRole(bytes32 role, address account) internal virtual {
+        _grantRole(role, account);
+    }
+
+    /**
+     * @dev Sets `adminRole` as ``role``'s admin role.
+     *
+     * Emits a {RoleAdminChanged} event.
+     */
+    function _setRoleAdmin(bytes32 role, bytes32 adminRole) internal virtual {
+        bytes32 previousAdminRole = getRoleAdmin(role);
+        _roles[role].adminRole = adminRole;
+        emit RoleAdminChanged(role, previousAdminRole, adminRole);
+    }
+
+    function _grantRole(bytes32 role, address account) private {
+        if (!hasRole(role, account)) {
+            _roles[role].members[account] = true;
+            emit RoleGranted(role, account, _msgSender());
+        }
+    }
+
+    function _revokeRole(bytes32 role, address account) private {
+        if (hasRole(role, account)) {
+            _roles[role].members[account] = false;
+            emit RoleRevoked(role, account, _msgSender());
+        }
+    }
+}
+
+
+
 pragma solidity ^0.8.0;
 
 
-contract Ninja is ERC721, Ownable, ReentrancyGuard {
-
+contract Ninja is ERC721Burnable, AccessControl, ReentrancyGuard {
     using Counters for Counters.Counter;
 
-    mapping(uint256 => string) private _tokenURIs;
-    Counters.Counter public _counter;
+    bytes32 public constant AIRDROP_MINTER_ROLE =
+        keccak256("AIRDROP_MINTER_ROLE");
+    bytes32 public constant EXTRA_MINTER_ROLE = keccak256("EXTRA_MINTER_ROLE");
+    bytes32 public constant ADMIN_ROLE = keccak256("ADMIN_ROLE");
 
-    string public saleURI =
-    "ipfs://QmeJ6YQ3Rf7wQjFpeyfmZGApzkrB7w1TbBxeo9figD4sW8";
-    string public contractURI =
-    "ipfs://QmZ5N7uJN21hZXykSM4WjUpPU6Q6dCcQ4Z9MQkfJJADErX";
+    string private _baseTokenURI;
+    Counters.Counter private _counter;
+
     address public USDT;
-    uint256 public preSaleCount = 20000;
-    uint256 public preSalePrice = 50 * 10 ** 18;
-    uint public preSaleStartTime = 0;
-    uint256 public preSoldCount = 0;
-    bool public isPreSale = true;
 
-    event ClosePreSale();
-    event SetTokenURI(uint256 id, string uri);
-    event PreSaleStart(uint256 time);
+    uint256 public salePrice = 50 * 10**18;
+    uint256 public saleStartTime = 0;
+
+    uint256 public saleCount = 20000;
+    uint256 public soldCount = 0;
+
+    uint256 public airdropCount = 20000;
+    uint256 public airdroppedCount = 0;
+
+    mapping(uint256 => uint256) public tokenType;
+
+    event SaleStart(uint256 time);
+    event TokenType(uint256 token, uint256 _type);
 
     constructor(address usdt) ERC721("Ninja", "NJ") {
         USDT = usdt;
+        _setupRole(AIRDROP_MINTER_ROLE, msg.sender);
+        _setupRole(EXTRA_MINTER_ROLE, msg.sender);
+        _setupRole(ADMIN_ROLE, msg.sender);
+        _setRoleAdmin(AIRDROP_MINTER_ROLE, ADMIN_ROLE);
+        _setRoleAdmin(EXTRA_MINTER_ROLE, ADMIN_ROLE);
     }
 
     receive() external payable {
         require(false, "R");
     }
 
-    function setTokenURI(uint256[] memory tokens, string[] memory uris)
-    public
-    onlyOwner
+    function startSale(uint256 startTime) public onlyRole(ADMIN_ROLE) {
+        require(saleStartTime == 0, "SS");
+        saleStartTime = startTime;
+        emit SaleStart(saleStartTime);
+    }
+
+    function setBaseURI(string calldata newBaseTokenURI)
+        public
+        onlyRole(ADMIN_ROLE)
     {
-        require(
-            tokens.length >= 1 &&
-            tokens.length <= 200 &&
-            tokens.length == uris.length,
-            "STU:1"
-        );
-        for (uint256 i = 0; i < tokens.length; i++) {
-            uint256 token = tokens[i];
-            string memory uri = uris[i];
-            require(_exists(token), "STU:2");
-            _tokenURIs[token] = uri;
-            emit SetTokenURI(token, uri);
-        }
+        _baseTokenURI = newBaseTokenURI;
     }
 
-    function closePreSale() public onlyOwner {
-        require(isPreSale, "CPS");
-        isPreSale = false;
-        emit ClosePreSale();
-    }
-
-    function startPreSale(uint256 startTime) public onlyOwner {
-        require(startTime > 0, "SPS:0");
-        require(preSaleStartTime == 0, "SPS:1");
-        require(startTime >= block.timestamp, "SPS:2");
-        preSaleStartTime = startTime;
-        emit PreSaleStart(preSaleStartTime);
-    }
-
-    function preMint(address to, uint256 count) public {
-        require(preSaleStartTime > 0 && block.timestamp >= preSaleStartTime, "PM:0");
-        require(isPreSale, "PM:1");
+    function saleMint(address to, uint256 count) public {
+        require(saleStartTime > 0 && block.timestamp >= saleStartTime, "PM:0");
         require(count >= 1 && count <= 200, "PM:2");
-        require(preSoldCount + count <= preSaleCount, "PM:3");
+        require(soldCount + count <= saleCount, "PM:3");
         TransferHelper.safeTransferFrom(
             USDT,
             msg.sender,
             address(this),
-            preSalePrice * count
+            salePrice * count
         );
-        preSoldCount += count;
+        soldCount += count;
         for (uint256 i = 0; i < count; i++) {
             _mintTo(to);
+            _recordTokenType(0);
         }
     }
 
-    function mint(address to, string memory uri) public onlyOwner {
-        require(!isPreSale, "M1");
-        _mintTo(to);
-        _tokenURIs[_counter.current()] = uri;
-        emit SetTokenURI(_counter.current(), uri);
+    function airdropMint(address to, uint256 count)
+        public
+        onlyRole(AIRDROP_MINTER_ROLE)
+    {
+        require(count >= 1 && count <= 200, "ADM:1");
+        require(airdroppedCount + count <= airdropCount, "ADM:2");
+        airdroppedCount += count;
+        for (uint256 i = 0; i < count; i++) {
+            _mintTo(to);
+            _recordTokenType(1);
+        }
     }
 
-    function withdraw(address to) public onlyOwner {
+    function mint(address to) public onlyRole(EXTRA_MINTER_ROLE) {
+        _mintTo(to);
+        _recordTokenType(2);
+    }
+
+    function batchMint(address[] memory receivers) public {
+        require(receivers.length >= 1 && receivers.length <= 200, "BM");
+        for (uint256 i = 0; i < receivers.length; i++) {
+            mint(receivers[i]);
+        }
+    }
+
+    function batchBurn(uint256[] memory tokenIds) public {
+        require(tokenIds.length >= 1 && tokenIds.length <= 200, "BB");
+        for (uint256 i = 0; i < tokenIds.length; i++) {
+            burn(tokenIds[i]);
+        }
+    }
+
+    function withdraw(address to) public onlyRole(ADMIN_ROLE) {
         TransferHelper.safeTransfer(
             USDT,
             to,
@@ -1396,21 +1659,35 @@ contract Ninja is ERC721, Ownable, ReentrancyGuard {
         );
     }
 
-    function tokenURI(uint256 tokenId)
-    public
-    view
-    virtual
-    override
-    returns (string memory)
-    {
-        if (isPreSale) return saleURI;
-        string memory _tokenURI = _tokenURIs[tokenId];
-        if (bytes(_tokenURI).length > 0) return _tokenURI;
-        return super.tokenURI(tokenId);
+    function counterCurrent() public view returns (uint256) {
+        return _counter.current();
     }
 
     function _mintTo(address to) internal nonReentrant {
         _counter.increment();
-        _mint(to, _counter.current());
+        _mint(to, counterCurrent());
+    }
+
+    function baseURI() public view returns (string memory) {
+        return _baseURI();
+    }
+
+    function _baseURI() internal view virtual override returns (string memory) {
+        return _baseTokenURI;
+    }
+
+    function _recordTokenType(uint256 _type) internal {
+        tokenType[counterCurrent()] = _type;
+        emit TokenType(counterCurrent(), _type);
+    }
+
+    function supportsInterface(bytes4 interfaceId)
+        public
+        view
+        virtual
+        override(ERC721, AccessControl)
+        returns (bool)
+    {
+        return super.supportsInterface(interfaceId);
     }
 }
