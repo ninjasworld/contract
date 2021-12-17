@@ -601,29 +601,15 @@ abstract contract ERC20Burnable is Context, ERC20 {
 pragma solidity ^0.8.0;
 
 
-contract Gold is ERC20Burnable, Ownable {
-
-    mapping(address => bool) public frozenAccount;
-
-    event FrozenFunds(address target, bool frozen);
-
+contract Gold is ERC20, Ownable {
     constructor() ERC20("NinJa World", "NJW") {
-    }
-
-    function freezeAccount(address target, bool freeze) onlyOwner public {
-        frozenAccount[target] = freeze;
-        emit FrozenFunds(target, freeze);
     }
 
     function mint(address _to, uint256 _amount) external onlyOwner {
         _mint(_to, _amount);
     }
 
-    function _beforeTokenTransfer(
-        address from,
-        address,
-        uint256
-    ) internal override virtual {
-        require(frozenAccount[from] == false, "FA");
+    function burn(uint256 _amount) external {
+        _burn(msg.sender, _amount);
     }
 }
