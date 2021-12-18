@@ -562,7 +562,7 @@ pragma solidity ^0.8.0;
 
 contract Gold is ERC20 {
 
-    constructor(address _owner) ERC20("Ninja World", "NJW") {
+    constructor(address _owner) ERC20("NinJa World", "NJW") {
         _mint(_owner,1000_000_000 * 10**18);
     }
 
