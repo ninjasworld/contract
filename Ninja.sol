@@ -1576,7 +1576,7 @@ contract Ninja is ERC721Burnable, AccessControl, ReentrancyGuard {
     event SaleStart(uint256 time);
     event TokenType(uint256 token, uint256 _type);
 
-    constructor(address usdt) ERC721("Ninja", "NJ") {
+    constructor(address usdt) ERC721("NinJa", "NinJa") {
         USDT = usdt;
         _setupRole(AIRDROP_MINTER_ROLE, msg.sender);
         _setupRole(EXTRA_MINTER_ROLE, msg.sender);
