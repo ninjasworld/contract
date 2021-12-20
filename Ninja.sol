@@ -1562,7 +1562,7 @@ contract Ninja is ERC721Burnable, AccessControl, ReentrancyGuard {
 
     address public USDT;
 
-    uint256 public salePrice = 50 * 10**18;
+    uint256 public salePrice = 50 * 10**6;
     uint256 public saleStartTime = 0;
 
     uint256 public saleCount = 20000;
